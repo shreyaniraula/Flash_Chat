@@ -55,3 +55,4 @@ public/
 analysis_options.yaml
 pubspec.lock
 README.md
+firebase_options.dart
