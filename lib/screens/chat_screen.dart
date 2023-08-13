@@ -16,9 +16,9 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  final messageTextController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   late String messageText;
-  final messageTextController = TextEditingController();
 
   @override
   void initState() {
@@ -85,6 +85,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       _firestore.collection('messages').add({
                         'text': messageText,
                         'sender': loggedInUser.email,
+                        //Add current date time to firebase
+                        'time': DateTime.now(),
                       });
                     },
                     child: const Text(
@@ -108,7 +110,10 @@ class MessagesStream extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestore.collection('messages').snapshots(),
+      stream: _firestore
+          .collection('messages')
+          .orderBy('time', descending: false)
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(
@@ -117,27 +122,28 @@ class MessagesStream extends StatelessWidget {
           );
         }
         final messages = snapshot.data!.docs.reversed;
-        List<MessageBubble> messagesWidgets = [];
+        List<MessageBubble> messageBubbles = [];
         for (var message in messages) {
           var data = message.data() as Map;
           final messageText = data['text'];
           final messageSender = data['sender'];
 
-          final currentUser = messageSender;
+          final currentUser = loggedInUser.email;
 
           final messageBubble = MessageBubble(
             sender: messageSender,
             text: messageText,
             //If logged in user is the sender.
-            isMe: currentUser == loggedInUser.email,
+            isMe: currentUser == messageSender,
+
           );
-          messagesWidgets.add(messageBubble);
+          messageBubbles.add(messageBubble);
         }
         return Expanded(
           child: ListView(
             reverse: true,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20.0),
-            children: messagesWidgets,
+            children: messageBubbles,
           ),
         );
       },
